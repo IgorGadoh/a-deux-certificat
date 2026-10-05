@@ -154,15 +154,18 @@ function invalidateInvite() {
 }
 
 function loadInvitation() {
-  const match = window.location.hash.match(/^#invitation=(.+)$/);
-  if (!match) return;
-  if (match[1].length > 350000) {
+  const query = new URLSearchParams(window.location.search);
+  const queryInvitation = query.get("invitation");
+  const hashMatch = window.location.hash.match(/^#invitation=(.+)$/);
+  const encodedInvitation = queryInvitation ?? hashMatch?.[1];
+  if (encodedInvitation === undefined) return;
+  if (!encodedInvitation || encodedInvitation.length > 350000) {
     showInvitationError("Ce lien d’invitation est trop volumineux ou invalide.");
     return;
   }
 
   try {
-    const invitation = decodePayload(match[1]);
+    const invitation = decodePayload(encodedInvitation);
     if (!isValidInvitation(invitation)) throw new Error("Invalid invitation data");
 
     secondSignerMode = true;
@@ -330,7 +333,8 @@ createInviteButton.addEventListener("click", () => {
     return;
   }
   const inviteUrl = new URL(window.location.href);
-  inviteUrl.hash = `invitation=${encodePayload(payload)}`;
+  inviteUrl.hash = "";
+  inviteUrl.searchParams.set("invitation", encodePayload(payload));
   inviteLinkInput.value = inviteUrl.toString();
   inviteLinkBox.hidden = false;
   inviteStatus.textContent = "Lien créé avec les prénoms, la date, le lieu, votre promesse et votre signature. Envoyez-le à la deuxième personne.";
