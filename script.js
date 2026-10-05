@@ -193,6 +193,9 @@ function loadInvitation() {
 signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
   const context = canvas.getContext("2d");
   let isDrawing = false;
+  let strokeDistance = 0;
+  let previousPoint = null;
+  let signatureSnapshot = null;
 
   canvas.width = 800;
   canvas.height = 180;
@@ -213,35 +216,45 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
     if (secondSignerMode && index === 0) return;
     event.preventDefault();
     isDrawing = true;
+    strokeDistance = 0;
+    signatureSnapshot = context.getImageData(0, 0, canvas.width, canvas.height);
     canvas.setPointerCapture(event.pointerId);
-    const point = pointFromEvent(event);
+    previousPoint = pointFromEvent(event);
     context.beginPath();
-    context.moveTo(point.x, point.y);
-    context.lineTo(point.x + 0.1, point.y + 0.1);
-    context.stroke();
-    signaturesComplete[index] = true;
-    canvas.closest(".signature-field").classList.add("signed");
-    signaturePreview.src = canvas.toDataURL("image/png");
-    signaturePreview.hidden = false;
     formError.hidden = true;
-    invalidateInvite();
-    updatePreview();
   });
 
   canvas.addEventListener("pointermove", (event) => {
     if (!isDrawing) return;
     event.preventDefault();
     const point = pointFromEvent(event);
+    const previous = previousPoint;
+    strokeDistance += Math.hypot(point.x - previousPoint.x, point.y - previousPoint.y);
+    previousPoint = point;
+    context.beginPath();
+    context.moveTo(previous.x, previous.y);
     context.lineTo(point.x, point.y);
     context.stroke();
-    signaturePreview.src = canvas.toDataURL("image/png");
   });
 
   function stopDrawing() {
     if (!isDrawing) return;
     isDrawing = false;
     context.closePath();
+    if (strokeDistance < canvas.width * 0.025) {
+      context.putImageData(signatureSnapshot, 0, 0);
+      if (signaturesComplete[index]) {
+        signaturePreview.src = canvas.toDataURL("image/png");
+      }
+      updatePreview();
+      return;
+    }
+
+    signaturesComplete[index] = true;
+    canvas.closest(".signature-field").classList.add("signed");
     signaturePreview.src = canvas.toDataURL("image/png");
+    signaturePreview.hidden = false;
+    invalidateInvite();
     updatePreview();
   }
 
