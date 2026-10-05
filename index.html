@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Créez et signez à deux un certificat de mariage symbolique, puis enregistrez-le en PDF."
+    />
+    <meta name="theme-color" content="#f8f6f0" />
+    <title>À Deux — Votre certificat de mariage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#accueil" aria-label="À Deux, accueil">
+        <span class="brand-symbol" aria-hidden="true">a<span>+</span>d</span>
+        <span>À Deux</span>
+      </a>
+      <a class="header-link" href="#creer">Créer notre certificat <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main id="accueil">
+      <section class="intro">
+        <div class="intro-copy">
+          <p class="eyebrow"><span></span> Une promesse à célébrer</p>
+          <h1>Un oui qui vous<br />ressemble.</h1>
+          <p class="intro-text">
+            Écrivez votre engagement, signez-le à deux et gardez-en un joli
+            souvenir à partager.
+          </p>
+          <a class="text-link" href="#creer">Créer votre certificat <span aria-hidden="true">↓</span></a>
+          <p class="privacy-note"><span aria-hidden="true">✳</span> Pas de compte, pas de données enregistrées sur un serveur.</p>
+        </div>
+
+        <div class="intro-art" aria-label="Illustration de deux alliances">
+          <div class="art-circle"></div>
+          <div class="ring ring-one"></div>
+          <div class="ring ring-two"></div>
+          <span class="art-spark spark-one">✳</span>
+          <span class="art-spark spark-two">✳</span>
+          <span class="art-caption">pour toujours,<br />à votre façon</span>
+        </div>
+      </section>
+
+      <section class="maker-section" id="creer">
+        <div class="section-heading">
+          <p class="eyebrow"><span></span> Le début de votre histoire</p>
+          <h2>Votre certificat, en quelques étapes.</h2>
+          <p>Remplissez les détails et signez chacun votre tour sur cet appareil.</p>
+        </div>
+
+        <div class="maker-layout">
+          <form class="form-card" id="certificate-form">
+            <div class="form-section">
+              <div class="form-section-heading">
+                <span class="step-number">01</span>
+                <div>
+                  <h3>Vos prénoms</h3>
+                  <p>Inscrivez les noms tels que vous souhaitez les voir apparaître.</p>
+                </div>
+              </div>
+              <div class="fields two-columns">
+                <label>
+                  Première personne
+                  <input id="name-one" name="name-one" type="text" maxlength="60" autocomplete="name" placeholder="Ex. Camille" required />
+                </label>
+                <label>
+                  Deuxième personne
+                  <input id="name-two" name="name-two" type="text" maxlength="60" placeholder="Ex. Alex" required />
+                </label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-heading">
+                <span class="step-number">02</span>
+                <div>
+                  <h3>Le jour du oui</h3>
+                  <p>Choisissez la date et le lieu de votre célébration.</p>
+                </div>
+              </div>
+              <div class="fields two-columns">
+                <label>
+                  Date
+                  <input id="wedding-date" name="wedding-date" type="date" required />
+                </label>
+                <label>
+                  Lieu
+                  <input id="wedding-place" name="wedding-place" type="text" maxlength="100" placeholder="Ex. Paris, France" required />
+                </label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-heading">
+                <span class="step-number">03</span>
+                <div>
+                  <h3>Votre promesse</h3>
+                  <p>Quelques mots qui n’appartiennent qu’à vous deux.</p>
+                </div>
+              </div>
+              <label class="full-field">
+                Notre engagement
+                <textarea id="vow" name="vow" maxlength="500" rows="4" placeholder="Nous promettons de rire ensemble, de nous soutenir et de choisir chaque jour notre belle aventure…" required></textarea>
+                <span class="field-hint"><span id="vow-count">0</span>/500 caractères</span>
+              </label>
+            </div>
+
+            <div class="form-section signatures-section">
+              <div class="form-section-heading">
+                <span class="step-number">04</span>
+                <div>
+                  <h3>Vos signatures</h3>
+                  <p>Signez dans les espaces ci-dessous avec le doigt ou la souris.</p>
+                </div>
+              </div>
+              <p class="second-signer-notice" id="second-signer-notice" hidden></p>
+              <div class="signature-fields">
+                <div class="signature-field">
+                  <div class="signature-label">
+                    <span id="signature-name-one">Première personne</span>
+                    <button class="clear-signature" type="button" data-clear="signature-one">Effacer</button>
+                  </div>
+                  <canvas class="signature-pad" id="signature-one" aria-label="Zone de signature de la première personne"></canvas>
+                  <span class="signature-hint">Signez ici</span>
+                </div>
+                <div class="signature-field">
+                  <div class="signature-label">
+                    <span id="signature-name-two">Deuxième personne</span>
+                    <button class="clear-signature" type="button" data-clear="signature-two">Effacer</button>
+                  </div>
+                  <canvas class="signature-pad" id="signature-two" aria-label="Zone de signature de la deuxième personne"></canvas>
+                  <span class="signature-hint">Signez ici</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="invite-panel" id="invite-panel">
+              <p class="invite-heading">La première signature est prête ?</p>
+              <p>Créez un lien à envoyer à l’autre personne pour qu’elle ajoute sa signature sur son appareil.</p>
+              <button class="invite-button" id="create-invite" type="button" disabled>Créer le lien de signature</button>
+              <div class="invite-link-box" id="invite-link-box" hidden>
+                <label for="invite-link">Lien à partager</label>
+                <div class="invite-link-row">
+                  <input id="invite-link" type="text" readonly />
+                  <button class="copy-button" id="copy-invite" type="button">Copier</button>
+                  <button class="copy-button share-button" id="share-invite" type="button" hidden>Partager</button>
+                </div>
+                <p class="invite-status" id="invite-status" aria-live="polite"></p>
+              </div>
+              <p class="invite-privacy"><strong>À savoir :</strong> le lien contient les informations et la première signature du certificat. Toute personne qui le reçoit peut les voir. Le lien fonctionne si le site est hébergé en ligne.</p>
+            </div>
+
+            <label class="consent">
+              <input id="symbolic-consent" type="checkbox" required />
+              <span>Je comprends que ce certificat est un souvenir symbolique et ne constitue pas un acte de mariage légal.</span>
+            </label>
+            <p class="form-error" id="form-error" role="alert" hidden></p>
+            <button class="download-button" id="download-button" type="submit" disabled>
+              <span aria-hidden="true">↓</span> Enregistrer en PDF
+            </button>
+            <p class="download-hint">Une fenêtre d’impression s’ouvrira. Choisissez « Enregistrer au format PDF ».</p>
+          </form>
+
+          <aside class="preview-column" aria-label="Aperçu du certificat">
+            <div class="preview-topline"><span>Aperçu en direct</span><span class="preview-dot"></span></div>
+            <article class="certificate" id="certificate">
+              <div class="certificate-inner">
+                <div class="certificate-flourish" aria-hidden="true">✳</div>
+                <p class="certificate-kicker">Un engagement du cœur</p>
+                <h2>Certificat<br />de mariage</h2>
+                <div class="certificate-rule"><span>✦</span></div>
+                <p class="certificate-intro">Aujourd’hui, devant ceux qui nous sont chers,</p>
+                <p class="certificate-names"><span id="preview-name-one">Prénom</span><span class="ampersand">&amp;</span><span id="preview-name-two">Prénom</span></p>
+                <p class="certificate-vow" id="preview-vow">écrivez ici la promesse qui vous unit.</p>
+                <p class="certificate-date">Le <span id="preview-date">votre date</span><br />à <span id="preview-place">votre lieu</span></p>
+                <div class="certificate-signatures">
+                  <div class="certificate-signature">
+                    <img id="preview-signature-one" alt="" hidden />
+                    <span class="signature-line"></span>
+                    <span id="preview-signature-label-one">Première personne</span>
+                  </div>
+                  <div class="certificate-signature">
+                    <img id="preview-signature-two" alt="" hidden />
+                    <span class="signature-line"></span>
+                    <span id="preview-signature-label-two">Deuxième personne</span>
+                  </div>
+                </div>
+                <div class="certificate-seal" aria-hidden="true">A<span>♥</span>D</div>
+                <p class="certificate-legal">Souvenir symbolique — sans valeur d’acte d’état civil</p>
+              </div>
+            </article>
+            <p class="preview-footnote">Le certificat est mis en page pour une impression A4.</p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand" href="#accueil"><span class="brand-symbol" aria-hidden="true">a<span>+</span>d</span><span>À Deux</span></a>
+      <p>Un souvenir à garder, une promesse à faire grandir.</p>
+      <span class="footer-disclaimer">Ce service ne célèbre ni n’enregistre les mariages légaux.</span>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>
