@@ -34,6 +34,7 @@ const preview = {
 };
 
 const signaturesComplete = [false, false];
+const signatureStrokes = [[], []];
 let secondSignerMode = false;
 
 function formatDate(value) {
@@ -92,9 +93,20 @@ function decodePayload(encoded) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+function signatureSvg(strokes) {
+  const paths = strokes
+    .map((stroke) => `<path d="${stroke}"/>`)
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="180" viewBox="0 0 800 180"><g fill="none" stroke="#28392e" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.2">${paths}</g></svg>`;
+}
+
+function signatureImageSource(strokes) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(signatureSvg(strokes))}`;
+}
+
 function isValidInvitation(payload) {
   const fields = ["nameOne", "nameTwo", "date", "place", "vow"];
-  if (!payload || payload.version !== 1 || payload.symbolicConsent !== true) return false;
+  if (!payload || ![1, 2].includes(payload.version) || payload.symbolicConsent !== true) return false;
   if (!fields.every((field) => typeof payload[field] === "string")) return false;
   if (
     payload.nameOne.length > 60 ||
@@ -108,10 +120,23 @@ function isValidInvitation(payload) {
   if (
     parsedDate.getFullYear() !== year ||
     parsedDate.getMonth() !== month - 1 ||
-    parsedDate.getDate() !== day ||
-    typeof payload.firstSignature !== "string" ||
-    payload.firstSignature.length > 250000 ||
-    !/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(payload.firstSignature)
+    parsedDate.getDate() !== day
+  ) return false;
+  if (payload.version === 1) {
+    if (
+      typeof payload.firstSignature !== "string" ||
+      payload.firstSignature.length > 250000 ||
+      !/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(payload.firstSignature)
+    ) return false;
+  } else if (
+    !Array.isArray(payload.signatureStrokes) ||
+    payload.signatureStrokes.length === 0 ||
+    payload.signatureStrokes.length > 100 ||
+    !payload.signatureStrokes.every((stroke) =>
+      typeof stroke === "string" &&
+      stroke.length <= 5000 &&
+      /^M\d{1,3} \d{1,3}(?:L\d{1,3} \d{1,3})+$/.test(stroke),
+    )
   ) return false;
   return fields.every((field) => payload[field].trim().length > 0);
 }
@@ -156,24 +181,16 @@ function loadInvitation() {
     signaturesComplete[0] = true;
     const firstSignature = signaturePads[0];
     const firstSignatureField = firstSignature.canvas.closest(".signature-field");
-    firstSignature.preview.src = invitation.firstSignature;
+    firstSignature.preview.src = invitation.version === 1
+      ? invitation.firstSignature
+      : signatureImageSource(invitation.signatureStrokes);
     firstSignature.preview.hidden = false;
     firstSignatureField.classList.add("signed", "locked");
     firstSignatureField.querySelector(".signature-label span").textContent = invitation.nameOne;
-    const firstSignatureImage = new Image();
-    firstSignatureImage.onload = () => {
-      firstSignature.canvas.getContext("2d").drawImage(
-        firstSignatureImage,
-        0,
-        0,
-        firstSignature.canvas.width,
-        firstSignature.canvas.height,
-      );
-    };
-    firstSignatureImage.src = invitation.firstSignature;
 
     invitePanel.hidden = true;
-    secondSignerNotice.textContent = `${invitation.nameOne} a déjà signé. À votre tour, ${invitation.nameTwo} !`;
+    secondSignerNotice.textContent =
+      `Le certificat de ${invitation.nameOne} et ${invitation.nameTwo} est prérempli avec les réponses envoyées : prénoms, date, lieu et promesse. À votre tour de signer !`;
     secondSignerNotice.hidden = false;
     document.querySelector(".signatures-section .form-section-heading h3").textContent =
       "À votre tour de signer";
@@ -196,6 +213,7 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
   let strokeDistance = 0;
   let previousPoint = null;
   let signatureSnapshot = null;
+  let currentStroke = [];
 
   canvas.width = 800;
   canvas.height = 180;
@@ -207,8 +225,8 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
   function pointFromEvent(event) {
     const bounds = canvas.getBoundingClientRect();
     return {
-      x: ((event.clientX - bounds.left) / bounds.width) * canvas.width,
-      y: ((event.clientY - bounds.top) / bounds.height) * canvas.height,
+      x: Math.max(0, Math.min(canvas.width, ((event.clientX - bounds.left) / bounds.width) * canvas.width)),
+      y: Math.max(0, Math.min(canvas.height, ((event.clientY - bounds.top) / bounds.height) * canvas.height)),
     };
   }
 
@@ -220,7 +238,7 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
     signatureSnapshot = context.getImageData(0, 0, canvas.width, canvas.height);
     canvas.setPointerCapture(event.pointerId);
     previousPoint = pointFromEvent(event);
-    context.beginPath();
+    currentStroke = [`M${Math.round(previousPoint.x)} ${Math.round(previousPoint.y)}`];
     formError.hidden = true;
   });
 
@@ -231,10 +249,13 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
     const previous = previousPoint;
     strokeDistance += Math.hypot(point.x - previousPoint.x, point.y - previousPoint.y);
     previousPoint = point;
-    context.beginPath();
-    context.moveTo(previous.x, previous.y);
-    context.lineTo(point.x, point.y);
-    context.stroke();
+    if (Math.hypot(point.x - previous.x, point.y - previous.y) >= 3) {
+      currentStroke.push(`L${Math.round(point.x)} ${Math.round(point.y)}`);
+      context.beginPath();
+      context.moveTo(previous.x, previous.y);
+      context.lineTo(point.x, point.y);
+      context.stroke();
+    }
   });
 
   function stopDrawing() {
@@ -243,6 +264,7 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
     context.closePath();
     if (strokeDistance < canvas.width * 0.025) {
       context.putImageData(signatureSnapshot, 0, 0);
+      currentStroke = [];
       if (signaturesComplete[index]) {
         signaturePreview.src = canvas.toDataURL("image/png");
       }
@@ -250,6 +272,15 @@ signaturePads.forEach(({ canvas, preview: signaturePreview }, index) => {
       return;
     }
 
+    if (currentStroke.length < 2) {
+      context.putImageData(signatureSnapshot, 0, 0);
+      currentStroke = [];
+      updatePreview();
+      return;
+    }
+
+    signatureStrokes[index].push(currentStroke.join(""));
+    currentStroke = [];
     signaturesComplete[index] = true;
     canvas.closest(".signature-field").classList.add("signed");
     signaturePreview.src = canvas.toDataURL("image/png");
@@ -270,6 +301,7 @@ document.querySelectorAll(".clear-signature").forEach((button) => {
 
     const { canvas, preview: signaturePreview } = signaturePads[index];
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+    signatureStrokes[index] = [];
     signaturesComplete[index] = false;
     signaturePreview.removeAttribute("src");
     signaturePreview.hidden = true;
@@ -284,20 +316,24 @@ createInviteButton.addEventListener("click", () => {
   formError.hidden = true;
 
   const payload = {
-    version: 1,
+    version: 2,
     nameOne: nameOne.value.trim(),
     nameTwo: nameTwo.value.trim(),
     date: dateInput.value,
     place: placeInput.value.trim(),
     vow: vowInput.value.trim(),
     symbolicConsent: consentInput.checked,
-    firstSignature: signaturePads[0].canvas.toDataURL("image/png"),
+    signatureStrokes: [...signatureStrokes[0]],
   };
+  if (!isValidInvitation(payload)) {
+    showInvitationError("Impossible de créer un lien valide. Effacez votre signature et signez à nouveau.");
+    return;
+  }
   const inviteUrl = new URL(window.location.href);
   inviteUrl.hash = `invitation=${encodePayload(payload)}`;
   inviteLinkInput.value = inviteUrl.toString();
   inviteLinkBox.hidden = false;
-  inviteStatus.textContent = "Lien créé. Envoyez-le à la deuxième personne.";
+  inviteStatus.textContent = "Lien créé avec les prénoms, la date, le lieu, votre promesse et votre signature. Envoyez-le à la deuxième personne.";
   inviteLinkInput.focus();
   inviteLinkInput.select();
 });
